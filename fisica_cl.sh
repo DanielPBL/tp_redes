@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function monta_frame {
-  IP_DATA=`xxd -p pacote.txt | tr -d \\n`
+  IP_DATA=`cat packet.txt | xxd -p | tr -d \\n`
 
   PREAMBLE='55555555555555D5' #Preamble e start frame delimiter em hexa
 
@@ -73,24 +73,32 @@ function monta_frame {
   MAC_ORG=`echo $MAC_ORG | sed "s/://g"`
   MAC_DST=`echo $MAC_DST | sed "s/://g"`
 
-  echo -n "${PREAMBLE}${MAC_DST}${MAC_ORG}0800${IP_DATA}" > frame.hex
-  CRC=`crc32 frame.hex`
+  echo -n "${PREAMBLE}${MAC_DST}${MAC_ORG}0800${IP_DATA}" > frame_e.hex
+  crc32 frame_e.hex >> frame_e.hex
 
-  echo $CRC >> frame.hex
-  xxd -r -p frame.hex | tr -d \\n > frame.txt
+  xxd -r -p frame_e.hex | tr -d \\n > frame_e.txt
 
-  rm frame.hex
+  rm frame_e.hex
 }
 
-echo "Esperando pacote IP..."
+while true; do
+  echo "Esperando pacote IP..."
+  nc -l 8081 > packet.txt
 
-echo "Montando o frame..."
-monta_frame
-echo "Perguntando o TMQ..."
-echo "TMQ" | nc 127.0.0.1 8080
-echo "Esperando a resposta..."
-TMQ=`nc -l 8081`
-echo "TMQ do destino: $TMQ"
-echo "Enviando o pacote IP:"
-xxd pacote.txt
-nc 127.0.0.1 8080 < frame.txt
+  echo "Montando o frame..."
+  monta_frame
+
+  echo "Perguntando o TMQ..."
+  echo "TMQ" | nc 127.0.0.1 8080
+
+  echo "Esperando a resposta..."
+  TMQ=`nc -l 8081`
+  echo "TMQ do destino: $TMQ"
+
+  echo "Enviando o pacote IP:"
+  xxd packet.txt
+  nc 127.0.0.1 8080 < frame_e.txt
+
+  rm frame_e.txt
+  rm packet.txt
+done
