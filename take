@@ -1,0 +1,40 @@
+
+
+while read line; do    
+    
+    for i in $(echo $line | tr " " "\n")
+	do
+	  if [ "$var" = "1" ]
+				then
+    		mac=$i
+		var=2
+	else
+    		a=1
+	fi
+	
+	  if [ "$i" = "HW" ]
+				then
+    		var=1
+	  else
+    		a=1
+	fi
+	  if [ "$var" = "2" ]
+				then
+    		
+		var=3
+	else
+    		a=1
+	fi
+	  if [ "$var" = "3" ]
+				then
+    		if [ "$i" = "192.168.0.101" ] 
+					then
+			echo $mac
+
+		fi
+	else
+    		a=1
+	fi	 
+	   
+	done
+done < take1.txt
