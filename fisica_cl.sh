@@ -82,10 +82,12 @@ function monta_frame {
      MAC_DST=`echo $MAC_DST | sed "s/://g"`
 
      echo -n "${PREAMBLE}${MAC_DST}${MAC_ORG}0800${IP_DATA}" > frame_e.hex
-     xxd -r -p frame_e.hex | tr -d \\n > frame_e.txt
-     crc32 frame_e.txt | xxd -r -p >> frame_e.txt
+     xxd -r -p frame_e.hex | tr -d \\n > frame_e.dat
+     crc32 frame_e.dat | xxd -r -p >> frame_e.dat
+     xxd -b frame_e.dat | cut -d" " -f 2-7 | tr -d \\n | sed "s/ //g" > frame_e.txt
 
-     rm frame_e.hex
+     rm frame_e.hex &> /dev/null
+     rm frame_e.dat &> /dev/null
 }
 
 while true; do
@@ -106,5 +108,6 @@ while true; do
      xxd packet.txt
      nc 127.0.0.1 8080 < frame_e.txt
 
-     rm -f frame_e.txt packet.txt
+     rm frame_e.txt &> /dev/null
+     rm packet.txt &> /dev/null
 done
