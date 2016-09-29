@@ -39,10 +39,10 @@ function monta_frame {
 
                if [ "$var" = "2" ]; then
                     var=3
+               fi
 
-               if [ "$var" = "3" ] && [ "$i" = "${IPORG_OCT1}.${IPORG_OCT2}.${IPORG_OCT3}.${IPORG_OCT4}" ]; then
-                         MAC_ORG=`echo $MAC`
-                    fi
+               if [ "$var" = "3" ] && [ "$i" = "$IPORG" ]; then
+                    MAC_ORG=`echo $MAC`
                fi
           done
      done < ifc.txt
