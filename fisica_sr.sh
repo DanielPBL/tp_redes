@@ -35,6 +35,7 @@ while true; do
           cat frame_r.txt | sed "s/\([0-9]\{4\}\)/\1\n/g" > frame_r.dat
 
           #Convertendo cada dígito hexa de binário textual para hexa textual
+          rm frame_r.hex &> /dev/null
           while read line; do
             echo "obase=16; ibase=2; $line" | bc | tr -d \\n >> frame_r.hex
           done < frame_r.dat

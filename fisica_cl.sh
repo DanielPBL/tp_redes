@@ -6,6 +6,9 @@ function monta_frame {
      #Preamble e start frame delimiter em hexa
      PREAMBLE='55555555555555D5'
 
+     #Ethertype em hexa
+     ETHERTYPE='0800'
+
      #Bytes 11-14 do pacote IP
      IPORG_OCT1=`echo $((16#$(echo $IP_DATA | cut -b25-26)))`
      IPORG_OCT2=`echo $((16#$(echo $IP_DATA | cut -b27-28)))`
@@ -57,8 +60,8 @@ function monta_frame {
      echo "MAC da Origem: $MAC_ORG"
 
      #Ping para poder fazer o ARP
-     ping -c 1 ${IPDST_OCT1}.${IPDST_OCT2}.${IPDST_OCT3}.${IPDST_OCT4} &>/dev/null
-     MAC_DST=`arp ${IPDST_OCT1}.${IPDST_OCT2}.${IPDST_OCT3}.${IPDST_OCT4} | grep -E -o -e "([A-Za-z0-9]{2}:?){6}"`
+     ping -c 1 $IPDST &>/dev/null
+     MAC_DST=`arp $IPDST | grep -E -o -e "([A-Za-z0-9]{2}:?){6}"`
 
      #Se não encontrar o MAC de destino
      if [ -z "$MAC_DST" ]; then
@@ -72,7 +75,7 @@ function monta_frame {
      MAC_DST=`echo $MAC_DST | sed "s/://g"`
 
      #Montar o quadro Ethernet
-     echo -n "${PREAMBLE}${MAC_DST}${MAC_ORG}0800${IP_DATA}" > frame_e.hex
+     echo -n "${PREAMBLE}${MAC_DST}${MAC_ORG}${ETHERTYPE}${IP_DATA}" > frame_e.hex
 
      #Transfroma o quadro de hexa textual para binário
      xxd -r -p frame_e.hex | tr -d \\n > frame_e.dat
