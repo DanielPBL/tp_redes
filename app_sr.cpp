@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
 
 #include <netdb.h>
 #include <netinet/in.h>
 
 #include <string.h>
 #include <unistd.h>
+
+using namespace std;
+
+#define PORTA 8080
 
 int main( int argc, char *argv[] ) {
    int sockfd, newsockfd, portno;
@@ -24,7 +29,7 @@ int main( int argc, char *argv[] ) {
 
    /* Initialize socket structure */
    bzero((char *) &serv_addr, sizeof(serv_addr));
-   portno = 5001;
+   portno = PORTA;
 
    serv_addr.sin_family = AF_INET;
    serv_addr.sin_addr.s_addr = INADDR_ANY;
@@ -39,6 +44,7 @@ int main( int argc, char *argv[] ) {
    /* Now start listening for the clients, here process will
       * go in sleep mode and will wait for the incoming connection
    */
+   cout << "Servidor rodando...\n";
 
    listen(sockfd,5);
    clilen = sizeof(cli_addr);
@@ -63,7 +69,9 @@ int main( int argc, char *argv[] ) {
    printf("Here is the message: %s\n",buffer);
 
    /* Write a response to the client */
-   n = write(newsockfd,"I got your message",18);
+   // Código de ver o que é a resposta
+   char resposta[1024] = "Mensagem de volta";
+   n = write(newsockfd, resposta, 18);
 
    if (n < 0) {
       perror("ERROR writing to socket");

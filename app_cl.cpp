@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -9,8 +10,8 @@
 
 using namespace std;
 
-#define PORTA 80
-#define ENDERECO 127.0.0.1
+#define PORTA 8080
+#define ENDERECO "127.0.0.1"
 
 
 int main(int argc, char *argv[]) {
@@ -20,12 +21,7 @@ int main(int argc, char *argv[]) {
 
    char buffer[256];
 
-   if (argc < 3) {
-      fprintf(stderr,"usage %s hostname port\n", argv[0]);
-      exit(0);
-   }
-
-   portno = atoi(argv[2]);
+   portno = PORTA;
 
    /* Create a socket point */
    sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -35,7 +31,7 @@ int main(int argc, char *argv[]) {
       exit(1);
    }
 
-   server = gethostbyname(argv[1]);
+   server = gethostbyname(ENDERECO);
 
    if (server == NULL) {
       fprintf(stderr,"ERROR, no such host\n");
@@ -57,12 +53,15 @@ int main(int argc, char *argv[]) {
       * will be read by server
    */
 
-   printf("Please enter the message: ");
-   bzero(buffer,256);
-   fgets(buffer,255,stdin);
+   printf("Digite o servidor/site: ");
+   cin >> buffer;
+   // Faz a requisição
+   char req[300] = "Get / HTTP/1.1\r\nHost: ";
+   strcat(req, buffer);
+   strcat(req,"\r\n");
 
    /* Send message to the server */
-   n = write(sockfd, buffer, strlen(buffer));
+   n = write(sockfd, req, strlen(req));
 
    if (n < 0) {
       perror("ERROR writing to socket");
