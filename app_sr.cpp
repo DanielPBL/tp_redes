@@ -49,33 +49,35 @@ int main( int argc, char *argv[] ) {
    listen(sockfd,5);
    clilen = sizeof(cli_addr);
 
-   /* Accept actual connection from the client */
-   newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
+   while (1) {
+       /* Accept actual connection from the client */
+       newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
 
-   if (newsockfd < 0) {
-      perror("ERROR on accept");
-      exit(1);
-   }
+       if (newsockfd < 0) {
+          perror("ERROR on accept");
+          exit(1);
+       }
 
-   /* If connection is established then start communicating */
-   bzero(buffer,256);
-   n = read( newsockfd,buffer,255 );
+       /* If connection is established then start communicating */
+       bzero(buffer,256);
+       n = read( newsockfd,buffer,255 );
 
-   if (n < 0) {
-      perror("ERROR reading from socket");
-      exit(1);
-   }
+       if (n < 0) {
+          perror("ERROR reading from socket");
+          exit(1);
+       }
 
-   printf("Here is the message: %s\n",buffer);
+       printf("Here is the message: %s\n",buffer);
 
-   /* Write a response to the client */
-   // Código de ver o que é a resposta
-   char resposta[1024] = "Mensagem de volta";
-   n = write(newsockfd, resposta, 18);
+       /* Write a response to the client */
+       // Código de ver o que é a resposta
+       char resposta[1024] = "Mensagem de volta";
+       n = write(newsockfd, resposta, 18);
 
-   if (n < 0) {
-      perror("ERROR writing to socket");
-      exit(1);
+       if (n < 0) {
+          perror("ERROR writing to socket");
+          exit(1);
+       }
    }
 
    return 0;
