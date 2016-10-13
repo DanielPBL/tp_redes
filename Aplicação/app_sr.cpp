@@ -12,7 +12,7 @@ using namespace std;
 
 #define PORTA 8080
 
-int main( int argc, char *argv[] ) {
+int main(int argc, char **argv) {
    int sockfd, newsockfd, portno;
    socklen_t clilen;
    char buffer[256];
@@ -46,7 +46,7 @@ int main( int argc, char *argv[] ) {
    */
    cout << "Servidor rodando...\n";
 
-   listen(sockfd,5);
+   listen(sockfd, 5);
    clilen = sizeof(cli_addr);
 
    while (1) {
@@ -59,15 +59,15 @@ int main( int argc, char *argv[] ) {
        }
 
        /* If connection is established then start communicating */
-       bzero(buffer,256);
-       n = read( newsockfd,buffer,255 );
+       bzero(buffer, 256);
+       n = read(newsockfd, buffer, 255);
 
        if (n < 0) {
           perror("ERROR reading from socket");
           exit(1);
        }
 
-       printf("Here is the message: %s\n",buffer);
+       printf("Here is the message: %s\n", buffer);
 
        /* Write a response to the client */
        // Código de ver o que é a resposta

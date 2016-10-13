@@ -14,7 +14,7 @@ using namespace std;
 #define ENDERECO "127.0.0.1"
 
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
    int sockfd, portno, n;
    struct sockaddr_in serv_addr;
    struct hostent *server;
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
    // Faz a requisição
    char req[300] = "Get / HTTP/1.1\r\nHost: ";
    strcat(req, buffer);
-   strcat(req,"\r\n");
+   strcat(req, "\r\n");
 
    /* Send message to the server */
    n = write(sockfd, req, strlen(req));
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
    }
 
    /* Now read server response */
-   bzero(buffer,256);
+   bzero(buffer, 256);
    n = read(sockfd, buffer, 255);
 
    if (n < 0) {

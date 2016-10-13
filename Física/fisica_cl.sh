@@ -78,7 +78,7 @@ function monta_frame {
      echo -n "${PREAMBLE}${MAC_DST}${MAC_ORG}${ETHERTYPE}${IP_DATA}" > frame_e.hex
 
      #Transfroma o quadro de hexa textual para binário
-     xxd -r -p frame_e.hex | tr -d \\n > frame_e.dat
+     xxd -r -p frame_e.hex > frame_e.dat
 
      #Calcula o CRC e adiciona no final do quadro
      crc32 frame_e.dat | xxd -r -p >> frame_e.dat
@@ -90,19 +90,44 @@ function monta_frame {
      rm frame_e.dat &> /dev/null
 }
 
+#Porta do cliente
+PORT=`echo $1`
+
+#Informações da Entidade Par
+IP_SERVER=`echo $2`
+PORT_SERVER=`echo $3`
+
+#Se não informar a porta
+if [ -z "$PORT" ]; then
+     echo "A porta deve ser informada"
+     exit
+fi
+
+#Se não informar o IP_SERVER
+if [ -z "$IP_SERVER" ]; then
+     echo "O IP do servidor deve ser informado"
+     exit
+fi
+
+#Se não informar o PORT_SERVER
+if [ -z "$PORT_SERVER" ]; then
+     echo "A porta do servidor deve ser informada"
+     exit
+fi
+
 while true; do
      #Aguarda conexão da camada superior
      echo "Esperando pacote IP..."
-     nc -l 8081 > packet.txt
+     nc -l $PORT > packet.txt
 
      echo "Montando o frame..."
      monta_frame
 
      echo "Perguntando o TMQ..."
-     echo "TMQ" | nc 127.0.0.1 8080
+     echo "TMQ" | nc $IP_SERVER $PORT_SERVER
 
      echo "Esperando a resposta..."
-     TMQ=`nc -l 8081`
+     TMQ=`nc -l $PORT`
      echo "TMQ do destino: $TMQ"
 
      #Exibe o pacote IP no formato HEX Dump
@@ -110,7 +135,7 @@ while true; do
      xxd packet.txt
 
      #Envia o quadro Ethernet no formato binário textual para o servidor da camada física
-     nc 127.0.0.1 8080 < frame_e.txt
+     nc $IP_SERVER $PORT_SERVER < frame_e.txt
 
      rm frame_e.txt &> /dev/null
      rm packet.txt &> /dev/null
