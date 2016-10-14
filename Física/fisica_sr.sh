@@ -7,8 +7,10 @@ PORT=`echo $1`
 IP_CLIENT=`echo $2`
 PORT_CLIENT=`echo $3`
 
+PORT_CMD=`echo $4`
+
 #TMQ
-TMQ=`echo $4`
+TMQ=`echo $5`
 
 #Se não informar a porta
 if [ -z "$PORT" ]; then
@@ -23,8 +25,8 @@ if [ -z "$IP_CLIENT" ]; then
 fi
 
 #Se não informar o PORT_CLIENT
-if [ -z "$PORT_CLIENT" ]; then
-     echo "A porta do cliente deve ser informada"
+if [ -z "$PORT_CMD" ]; then
+     echo "A porta da camada de rede deve ser informada"
      exit
 fi
 
@@ -37,6 +39,12 @@ fi
 #Faixa de valores para o TMQ
 if [ "$TMQ" -lt "88" ] || [ "$TMQ" -gt "1542" ]; then
      echo "O TMQ deve estar entre 88 e 1542"
+     exit
+fi
+
+#Se não informar o PORT_CMD
+if [ -z "$PORT_CLIENT" ]; then
+     echo "A porta do cliente deve ser informada"
      exit
 fi
 
@@ -80,7 +88,7 @@ while true; do
 
           #Entrega o pacote IP (PAYLOAD do quadro Ethernet) para a camada superior
           echo "Enviando para camada superior..."
-          #nc $IP_CLIENT porta_a_definir < payload.bin
+          nc 127.0.0.1 $PORT_CMD < payload.bin
 
           rm frame_r.dat &> /dev/null
           rm frame_r.hex &> /dev/null

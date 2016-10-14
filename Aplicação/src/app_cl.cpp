@@ -8,9 +8,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "camadas.h"
+
 using namespace std;
 
-#define PORTA 8080
+#define PORTA 8081
 #define ENDERECO "127.0.0.1"
 
 
@@ -59,12 +61,35 @@ int main(int argc, char **argv) {
    char req[300] = "Get / HTTP/1.1\r\nHost: ";
    strcat(req, buffer);
    strcat(req, "\r\n");
+   char *msg_resposta = prepara_mensagem(req);
 
    /* Send message to the server */
-   n = write(sockfd, req, strlen(req));
+   n = write(sockfd, msg_resposta, strlen(req) + 52);
+
+   delete[] msg_resposta;
 
    if (n < 0) {
       perror("ERROR writing to socket");
+      exit(1);
+   }
+
+   close(sockfd);
+
+   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+   if (sockfd < 0) {
+      perror("ERROR opening socket 2");
+      exit(1);
+   }
+
+   bzero((char *) &serv_addr, sizeof(serv_addr));
+   serv_addr.sin_family = AF_INET;
+   bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
+   serv_addr.sin_port = htons(portno);
+
+   /* Now connect to the server */
+   if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+      perror("ERROR connecting 2");
       exit(1);
    }
 
@@ -78,5 +103,7 @@ int main(int argc, char **argv) {
    }
 
    printf("%s\n",buffer);
+
+   close(sockfd);
    return 0;
 }

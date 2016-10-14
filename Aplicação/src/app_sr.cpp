@@ -8,9 +8,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "camadas.h"
+
 using namespace std;
 
-#define PORTA 8080
+#define PORTA 8082
 
 int main(int argc, char **argv) {
    int sockfd, newsockfd, portno;
@@ -67,17 +69,23 @@ int main(int argc, char **argv) {
           exit(1);
        }
 
-       printf("Here is the message: %s\n", buffer);
+       printf("Here is the message: %s\n", buffer + 51);
 
        /* Write a response to the client */
        // Código de ver o que é a resposta
-       char resposta[1024] = "Mensagem de volta";
-       n = write(newsockfd, resposta, 18);
+       char resposta[] = "Mensagem de volta";
+       char *msg_resposta = prepara_mensagem(resposta);
+
+       n = write(newsockfd, msg_resposta, strlen(resposta) + 52);
+
+       delete[] msg_resposta;
 
        if (n < 0) {
           perror("ERROR writing to socket");
           exit(1);
        }
+
+       close(newsockfd);
    }
 
    return 0;
