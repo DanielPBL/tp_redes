@@ -18,13 +18,13 @@ fi
 
 #Se não informar o IP_CLIENT
 if [ -z "$IP_CLIENT" ]; then
-     echo "O IP do servidor deve ser informado"
+     echo "O IP do cliente deve ser informado"
      exit
 fi
 
 #Se não informar o PORT_CLIENT
 if [ -z "$PORT_CLIENT" ]; then
-     echo "A porta do servidor deve ser informada"
+     echo "A porta do cliente deve ser informada"
      exit
 fi
 
