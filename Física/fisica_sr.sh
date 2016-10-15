@@ -1,31 +1,26 @@
 #!/bin/bash
 
 #Porta do servidor
-PORT=`echo $1`
+PORT_SERVER=`echo -n $1`
 
-#Informações da Entidade Par
-IP_CLIENT=`echo $2`
-PORT_CLIENT=`echo $3`
-
-PORT_CMD=`echo $4`
+#Porta da camada de rede
+PORT_REDE=`echo -n $2`
 
 #TMQ
-TMQ=`echo $5`
+TMQ=`echo -n $3`
+
+#Informações do Clinte para poder responder o TMQ
+IP_CLIENT=`echo -n $4`
+PORT_CLIENT=`echo -n $5`
 
 #Se não informar a porta
-if [ -z "$PORT" ]; then
-     echo "A porta deve ser informada"
+if [ -z "$PORT_SERVER" ]; then
+     echo "A porta que será escutada deve ser informada"
      exit
 fi
 
-#Se não informar o IP_CLIENT
-if [ -z "$IP_CLIENT" ]; then
-     echo "O IP do cliente deve ser informado"
-     exit
-fi
-
-#Se não informar o PORT_CLIENT
-if [ -z "$PORT_CMD" ]; then
+#Se não informar o PORT_REDE
+if [ -z "$PORT_REDE" ]; then
      echo "A porta da camada de rede deve ser informada"
      exit
 fi
@@ -42,16 +37,22 @@ if [ "$TMQ" -lt "88" ] || [ "$TMQ" -gt "1542" ]; then
      exit
 fi
 
-#Se não informar o PORT_CMD
+#Se não informar o ip do cliente
+if [ -z "$IP_CLIENT]" ]; then
+     echo "O IP do cliente da camada física deve ser informado"
+     exit
+fi
+
+#Se não informar o PORT_REDE
 if [ -z "$PORT_CLIENT" ]; then
-     echo "A porta do cliente deve ser informada"
+     echo "A porta do cliente da camada física deve ser informada"
      exit
 fi
 
 while true; do
      #Espera a conexão do cliente da camada física
      echo "Esperando conexão..."
-     nc -l $PORT > frame_r.txt
+     nc -l $PORT_SERVER > frame_r.txt
 
      #Armazena o pedido para verificar se é a mensagem de TMQ
      REQUEST=`cat frame_r.txt`
@@ -88,7 +89,7 @@ while true; do
 
           #Entrega o pacote IP (PAYLOAD do quadro Ethernet) para a camada superior
           echo "Enviando para camada superior..."
-          nc 127.0.0.1 $PORT_CMD < payload.bin
+          nc 127.0.0.1 $PORT_REDE < payload.bin
 
           rm frame_r.dat &> /dev/null
           rm frame_r.hex &> /dev/null

@@ -91,15 +91,15 @@ function monta_frame {
 }
 
 #Porta do cliente
-PORT=`echo $1`
+PORT_TRANS=`echo -n $1`
 
 #Informações da Entidade Par
-IP_SERVER=`echo $2`
-PORT_SERVER=`echo $3`
+IP_SERVER=`echo -n $2`
+PORT_SERVER=`echo -n $3`
 
 #Se não informar a porta
-if [ -z "$PORT" ]; then
-     echo "A porta deve ser informada"
+if [ -z "$PORT_TRANS" ]; then
+     echo "A porta da camada de transporte deve ser informada"
      exit
 fi
 
@@ -118,7 +118,7 @@ fi
 while true; do
      #Aguarda conexão da camada superior
      echo "Esperando pacote IP..."
-     nc -l $PORT > packet.txt
+     nc -l $PORT_TRANS > packet.txt
 
      echo "Montando o frame..."
      monta_frame
@@ -127,7 +127,7 @@ while true; do
      echo "TMQ" | nc $IP_SERVER $PORT_SERVER
 
      echo "Esperando a resposta..."
-     TMQ=`nc -l $PORT`
+     TMQ=`nc -l $PORT_TRANS`
      echo "TMQ do destino: $TMQ"
 
      #Exibe o pacote IP no formato HEX Dump
