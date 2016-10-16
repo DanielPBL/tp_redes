@@ -1,0 +1,8 @@
+Alterações necessárias
+
+alteração no fisica_sr -> no final do arquivo, tem que "encaminhar" o retorno html recebido da camada de aplicação (servidor) para a camada física (cliente)
+e da mesma forma, encaminhar essa resposta (html) para a camada de aplicação (cliente)
+
+obs.:O cliente aguarda resposta html na porta 8083
+
+

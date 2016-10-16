@@ -1,0 +1,31 @@
+Relatório
+
+Para a implementação da camada de aplicação, foi utilizado sockets para comunicação cliente/servidor de acordo com os exemplos abaixo:
+https://www.tutorialspoint.com/unix_sockets/socket_client_example.htm
+https://www.tutorialspoint.com/unix_sockets/socket_server_example.htm
+E foi seguido a teoria para criação de servidor http  no site
+http://tableless.com.br/criando-seu-proprio-servidor-http-do-zero-ou-quase-parte-iii/
+
+A comunicação foi considerando o fluxo da pilha das camadas de rede, que no caso a camada de aplicação cliente comunica com a camada física cliente, requisitando o servidor/arquivo.html (enviando o cabeçalho da requisição para essa camada), e logo em seguida fica aguardando a resposta do servidor com o cabeçalho de resposta e conteúdo html. 
+
+Foi feita alteração nas camadas físicas cliente e servidor, ajustando-as para utilizar dois sockets, possibilitando assim, o fluxo da pilha.
+
+No servidor, foram utilizados 3 arquivos para teste, sendo o arquivo padrão index.html, o arquivo quando a página não for encontrada 404.html, e outro arquivo qualquer teste.html
+
+Exemplo para testar a fisica CLIENTE
+./fisica_cl 8081 192.168.0.3 8085
+./fisica_cl porta_q_escuta_app_cliente ip_camada_fisica_server porta_q_camada_fisica_server_escuta
+
+Exemplo para testar a fisica SERVIDOR
+
+./fisica_sr 8085 8086 1024 192.168.0.21 8081
+
+./fisica_sr porta_q_escuta_fisica_cliente porta_q_app_server_escuta TMQ ip_da_camada_fisica_cliente porta_q_camada_fisica_cliente_escuta
+
+
+Alterações necessárias
+
+alteração no fisica_sr -> no final do arquivo, tem que "encaminhar" o retorno html recebido da camada de aplicação (servidor) para a camada física (cliente)
+e da mesma forma, encaminhar essa resposta (html) para a camada de aplicação (cliente)
+
+
