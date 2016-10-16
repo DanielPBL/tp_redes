@@ -1,0 +1,12 @@
+Scripts
+
+Cliente:
+../TP_Redes/Física/fisica_cl.sh 45000 127.0.0.1 8081
+../TP_Redes/Física/fisica_sr.sh 8083 8084 512 127.0.0.1 8082
+../TP_Redes/Aplicação/build/app_cl.out 45000 8084
+
+
+Servidor:
+../TP_Redes/Física/fisica_sr.sh 8081 8080 512 127.0.0.1 45000
+../TP_Redes/Aplicação/build/app_sr.out 8080 8082
+../TP_Redes/Física/fisica_cl.sh 8082 127.0.0.1 8083

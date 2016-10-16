@@ -1,0 +1,15 @@
+#!/bin/bash
+
+OCT1=`echo $1 | cut -d . -f 1`
+OCT2=`echo $1 | cut -d . -f 2`
+OCT3=`echo $1 | cut -d . -f 3`
+OCT4=`echo $1 | cut -d . -f 4`
+
+OCT1=`echo "ibase=10; obase=16; $OCT1" | bc | tr '[:upper:]' '[:lower:]'`
+OCT2=`echo "ibase=10; obase=16; $OCT2" | bc | tr '[:upper:]' '[:lower:]'`
+OCT3=`echo "ibase=10; obase=16; $OCT3" | bc | tr '[:upper:]' '[:lower:]'`
+OCT4=`echo "ibase=10; obase=16; $OCT4" | bc | tr '[:upper:]' '[:lower:]'`
+
+#0xc0, 0xa8, 0x01, 0x02
+
+echo "0x${OCT1}, 0x${OCT2}, 0x${OCT3}, 0x${OCT4}"

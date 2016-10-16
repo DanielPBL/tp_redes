@@ -38,7 +38,7 @@ if [ "$TMQ" -lt "88" ] || [ "$TMQ" -gt "1542" ]; then
 fi
 
 #Se não informar o ip do cliente
-if [ -z "$IP_CLIENT]" ]; then
+if [ -z "$IP_CLIENT" ]; then
      echo "O IP do cliente da camada física deve ser informado"
      exit
 fi
@@ -85,7 +85,7 @@ while true; do
           cat frame_r.dat | xxd -p | tr -d \\n | sed "s/.\{44\}//" | sed "s/.\{8\}$//" > payload.hex
 
           #Converte o payload de hexa textual para binário
-          xxd -r -p payload.hex | tr -d \\n > payload.bin
+          xxd -r -p payload.hex > payload.bin
 
           #Entrega o pacote IP (PAYLOAD do quadro Ethernet) para a camada superior
           echo "Enviando para camada superior..."
