@@ -151,6 +151,59 @@ class TCP {
         return $segment . $data;
     }
 
+    public function sendData($msg, &$infos, $fscl_port, $fssr_port) {
+        $length = strlen($msg);
+        $pos    = 0;
+        $mms    = $infos['mms'];
+        $size   = $mms - (TCP::DATA_OFF >> 12) * 4;
+        do {
+            $pedaco   = substr($msg, $pos, $size);
+            $this->calcNextAck($infos['data']);
+            $segmento = $this->buildSegment($pedaco, TCP::ACK);
+            TCP::dump_segment($segmento);
+            TCP::send_segment($segmento, $fscl_port);
+            $resposta = TCP::recv_segment($fssr_port);
+            TCP::dump_segment($resposta);
+            $infos    = TCP::unpack_info($resposta);
+
+            if (!TCP::is_valid_segment($resposta) ||
+                $infos['ack_num'] != $this->getSeqNumber() ||
+                !TCP::is_flag_set($infos['control'], TCP::ACK)) {
+                echo "Falha na confirmação do segmento." . PHP_EOL;
+                die;
+            }
+
+            $pos = $pos + $size;
+        } while ($pos < $length);
+    }
+
+    public function recvData(&$infos, $fscl_port, $fssr_port) {
+        $msg = '';
+        do {
+            $segmento = TCP::recv_segment($fssr_port);
+            TCP::dump_segment($segmento);
+            $infos    = TCP::unpack_info($segmento);
+
+            if (TCP::is_flag_set($infos['control'], TCP::PSH))
+                break;
+
+            if (!TCP::is_valid_segment($segmento) ||
+                $infos['ack_num'] != $this->getSeqNumber() ||
+                !TCP::is_flag_set($infos['control'], TCP::ACK)) {
+                echo "Falha na confirmação do segmento." . PHP_EOL;
+                die;
+            }
+
+            $msg .= $infos['data'];
+            $this->calcNextAck($infos['data']);
+            $resposta = $this->buildSegment('', TCP::ACK);
+            TCP::dump_segment($resposta);
+            TCP::send_segment($resposta, $fscl_port);
+        } while (true);
+
+        return $msg;
+    }
+
     public function close() {
         $this->sr_port = 0;
         $this->dt_port = 0;
@@ -163,7 +216,7 @@ class TCP {
         return rand();
     }
 
-    public static function unpackInfo($segment) {
+    public static function unpack_info($segment) {
         $header = substr($segment, 0, (TCP::DATA_OFF >> 12) * 4);
         $data   = substr($segment, (TCP::DATA_OFF >> 12) * 4);
         $info   = unpack('nsr_port/ndt_port/Nseq_num/Nack_num/ncontrol/nmms/nchecksum/nurgent', $header);
@@ -181,22 +234,56 @@ class TCP {
         $flags = '';
 
         if (TCP::is_flag_set($control, TCP::FIN))
-            $flags .= 'FIN, ';
+            $flags .= 'FIN,';
         if (TCP::is_flag_set($control, TCP::SYN))
-            $flags .= 'SYN, ';
+            $flags .= 'SYN,';
         if (TCP::is_flag_set($control, TCP::RST))
-            $flags .= 'RST, ';
+            $flags .= 'RST,';
         if (TCP::is_flag_set($control, TCP::PSH))
-            $flags .= 'PSH, ';
+            $flags .= 'PSH,';
         if (TCP::is_flag_set($control, TCP::ACK))
-            $flags .= 'ACK, ';
+            $flags .= 'ACK,';
         if (TCP::is_flag_set($control, TCP::URG))
-            $flags .= 'URG, ';
+            $flags .= 'URG,';
 
         if (!empty($flags))
-            $flags = substr($flags, 0, -2);
+            $flags = substr($flags, 0, -1);
 
         return $flags;
+    }
+
+    public static function dump_segment($segmento) {
+        $info = TCP::unpack_info($segmento);
+
+        echo "({$info['sr_port']}) -> ({$info['dt_port']}): <SEQ={$info['seq_num']}><ACK={$info['ack_num']}><CTL=" . TCP::flags_desc($info['control']) . ">" . PHP_EOL;
+        hex_dump($segmento);
+    }
+
+    public static function send_segment($segment, $port) {
+        $ip_header = IPHeader::build('192.168.0.113', '192.168.0.1');
+        $packet = $ip_header . $segment;
+        send_socket($packet, $port);
+    }
+
+    public static function recv_segment($port) {
+        $segment = recv_socket($port);
+        $segment = substr($segment, 20);
+        return $segment;
+    }
+
+    public static function is_valid_segment($segment) {
+        $info    = TCP::unpack_info($segment);
+        $header  = pack('nnNNnnn',
+            $info['sr_port'],
+            $info['dt_port'],
+            $info['seq_num'],
+            $info['ack_num'],
+            $info['control'],
+            $info['mms'],
+            0 //Urgent Pointer
+        );
+
+        return checksum($header . $info['data']) == $info['checksum'];
     }
 }
 
@@ -210,8 +297,7 @@ function send_socket($msg, $port, $address = '127.0.0.1') {
     if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false)
         throw_socket_exception();
     try {
-        if (socket_connect($socket, $address, $port) === false)
-            throw_socket_exception($socket);
+        while (socket_connect($socket, $address, $port) === false);
         if (socket_write($socket, $msg, strlen($msg)) === false)
             throw_socket_exception($socket);
     } catch(Exception $e) {
@@ -227,8 +313,7 @@ function recv_socket($port, $address = '127.0.0.1') {
     if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false)
         throw_socket_exception();
     try {
-        if (socket_bind($socket, $address, $port) === false)
-            throw_socket_exception($socket);
+        while (socket_bind($socket, $address, $port) === false);
         if (socket_listen($socket) === false)
             throw_socket_exception($socket);
         if (($connection = socket_accept($socket)) === false)

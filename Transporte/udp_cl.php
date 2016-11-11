@@ -113,6 +113,8 @@ do {
         print_r($e->getTrace());
         break;
     }
+    
+    socket_close($connection);
 } while(true);
 
 socket_close($connection);

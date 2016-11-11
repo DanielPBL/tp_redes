@@ -29,12 +29,6 @@ if [ -z "$TMQ" ]; then
     exit
 fi
 
-#Se não informar o PORT_CLIENT
-if [ -z "$PORT_CLIENT" ]; then
-    echo "A porta para respoder o TMQ deve ser informada"
-    exit
-fi
-
 #Faixa de valores para o TMQ
 if [ "$TMQ" -lt "88" ] || [ "$TMQ" -gt "1542" ]; then
     echo "O TMQ deve estar entre 88 e 1542"
@@ -52,7 +46,7 @@ while true; do
     #Só responde com o TMQ se a mensagem for exatamente "TMQ"
     if [ "$REQUEST" == "TMQ" ]; then
         echo "Repondendo com TMQ: $TMQ"
-        echo -n $TMQ | nc 127.0.0.1 $PORT_CLIENT
+        echo -n $TMQ > payload.bin
     else
         #Caso contrário considera que é um quadro Ethernet em formato binário textual
         echo "Recebendo Frame Ethernet..."
@@ -78,11 +72,20 @@ while true; do
 
         #Converte o payload de hexa textual para binário
         xxd -r -p payload.hex > payload.bin
-        
-        #Entrega o pacote IP (PAYLOAD do quadro Ethernet) para a camada superior
-        echo "Enviando para camada superior..."
-        nc 127.0.0.1 $PORT_REDE < payload.bin
     fi
+
+    #Entrega o pacote IP (PAYLOAD do quadro Ethernet) para a camada superior
+    echo "Enviando para camada superior..."
+
+    while true; do
+        nc 127.0.0.1 $PORT_REDE < payload.bin
+
+        if [ $? -eq 0 ]; then
+            break;
+        fi
+
+        echo "Falha na entrega. Tentando novamente."
+    done
 
     rm frame_r.dat &> /dev/null
     rm frame_r.hex &> /dev/null

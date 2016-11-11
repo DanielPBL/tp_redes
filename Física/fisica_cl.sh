@@ -127,8 +127,16 @@ while true; do
     echo "Enviando o pacote IP:"
     xxd packet.txt
 
-    #Envia o quadro Ethernet no formato binário textual para o servidor da camada física
-    nc $IP_SERVER $PORT_SERVER < frame_e.txt
+    while true; do
+        #Envia o quadro Ethernet no formato binário textual para o servidor da camada física
+        nc $IP_SERVER $PORT_SERVER < frame_e.txt
+
+        if [ $? -eq 0 ]; then
+            break;
+        fi
+
+        echo "Falha na entrega. Tentando novamente."
+    done
 
     rm frame_e.txt &> /dev/null
     rm packet.txt &> /dev/null

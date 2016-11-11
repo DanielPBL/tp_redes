@@ -20,15 +20,16 @@ pack("nnnn")
 
 if ($argc < 4) {
     echo "Parâmtros insuficientes!" . PHP_EOL;
-    echo "php udp_cl.php porta_escutada porta_fscl porta_fssr" . PHP_EOL;
+    echo "php udp_cl.php porta_escutada porta_fscl porta_fssr porta_injecao" . PHP_EOL;
     die;
 }
 
 $app_port  = (int)$argv[1];
 $fscl_port = (int)$argv[2];
 $fssr_port = (int)$argv[3];
+$porta_injecao = (int)$argv[4];
 
-$tcp = new TCP;
+$tcp = new TCP(100);
 
 if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) {
     echo "socket_create() falhou. Motivo: " . socket_strerror(socket_last_error()) . PHP_EOL;
@@ -43,6 +44,26 @@ if (socket_bind($socket, '127.0.0.1', $app_port) === false) {
 
 if (socket_listen($socket) === false) {
     echo "socket_listen() falhou. Motivo: " . socket_strerror(socket_last_error($socket)) . PHP_EOL;
+    socket_close($socket);
+    die;
+}
+
+try {
+    echo "Perguntando o TMQ" . PHP_EOL;
+
+    send_socket("TMQ", $porta_injecao);
+    $tmq = (int)recv_socket($fssr_port);
+    //MMS = TMQ - IP_HEADER - ETHERNET_HEADER
+    $mms = $tmq - 20 - 26;
+    $tcp->setMMS($mms);
+
+    echo "TMQ: $tmq" . PHP_EOL;
+    echo "MMS: $mms" . PHP_EOL;
+} catch(Exception $e) {
+    echo "Erro ao obter o TMQ." . PHP_EOL;
+    echo "Socket error ({$e->getCode()}): {$e->getMessage()}" . PHP_EOL;
+    echo "Arquivo: '{$e->getFile()}'- Linha: {$e->getLine()}" . PHP_EOL;
+    print_r($e->getTrace());
     socket_close($socket);
     die;
 }
@@ -63,69 +84,126 @@ do {
     $pos       = strpos($msg, 'Host: ') + 6;
     $host      = substr($msg, $pos, strpos($msg, "\r\n", $pos) - $pos);
     $porta_ds  = explode(':', $host);
-    $porta_sr  = rand(1000, 65535);
+    $porta_sr  = $app_port;
     $porta_ds  = count($porta_ds) < 2 ? 8080 : (int)$porta_ds[1];
 
-    $checksum  = checksum(pack('nnn', $porta_sr, $porta_ds, $length) . $msg);
-    $segmento  = pack('nnnn', $porta_sr, $porta_ds, $length, $checksum);
-    $segmento .= $msg;
-
-    echo "Porta de Origem : $porta_sr" . PHP_EOL;
-    echo "Porta de Destino: $porta_ds" . PHP_EOL;
-    echo "Tamanho         : $length"   . PHP_EOL;
-    echo "Checksum        : $checksum" . PHP_EOL;
-
-    echo "Segmento" . PHP_EOL;
-    hex_dump($segmento);
+    $tcp->setSourcePort($porta_sr);
+    $tcp->setDestinationPort($porta_ds);
 
     try {
-        echo "Enviando dados para a camada física..." . PHP_EOL;
+        echo "Iniciando conexão TCP..." . PHP_EOL;
 
-        $ip_header = IPHeader::build('192.168.0.113', '192.168.0.1');
-        $pacote = $ip_header . $segmento;
-        send_socket($pacote, $fscl_port);
+        $segmento = $tcp->buildSegment('', TCP::SYN, true);
+        TCP::dump_segment($segmento);
+        TCP::send_segment($segmento, $fscl_port);
 
-        echo "Esperando resposta..." . PHP_EOL;
+        $resposta = TCP::recv_segment($fssr_port);
+        TCP::dump_segment($resposta);
+        $infos    = TCP::unpack_info($resposta);
 
-        $segmento = recv_socket($fssr_port);
-
-        echo "Segmento recebido..." . PHP_EOL;
-
-        //Remover dados da camada de rede
-        $segmento      = substr($segmento, 20);
-        $cabecalho_udp = substr($segmento, 0, 8);
-        $dados         = unpack('n4/', $cabecalho_udp);
-        $msg           = substr($segmento, 8);
-
-        echo "Validação do segmento... ";
-
-        $porta_sr  = (int)$dados[1];
-        $porta_ds  = (int)$dados[2];
-        $length    = (int)$dados[3];
-        $checksum  = (int)$dados[4];
-
-        if (checksum(pack('nnn', $porta_sr, $porta_ds, $length) . $msg) === $checksum) {
-            echo "OK" . PHP_EOL;
-        } else {
-            echo "FALHA" . PHP_EOL;
-            echo "Segmento ignorado.";
+        if (!TCP::is_valid_segment($resposta) ||
+            $infos['ack_num'] != $tcp->getSeqNumber() ||
+            !TCP::is_flag_set($infos['control'], TCP::SYN | TCP::ACK)) {
+            echo "Erro no estabelecimento da conexão." . PHP_EOL;
+            $tcp->close();
             continue;
         }
 
-        echo "Enviando mensagem para a aplicação..." . PHP_EOL;
+        $tcp->setAckNumber($infos['seq_num']);
+        $tcp->calcNextAck($infos['data'], true);
+        $segmento = $tcp->buildSegment('', TCP::ACK);
+        TCP::dump_segment($segmento);
+        TCP::send_segment($segmento, $fscl_port);
+
+        echo "Conexão estabelecida." . PHP_EOL;
+        echo "Transmitindo dados..." . PHP_EOL;
+
+        $tcp->sendData($msg, $infos, $fscl_port, $fssr_port);
+
+        echo "Enviando pedido de PUSH..." . PHP_EOL;
+
+        $tcp->calcNextAck($infos['data']);
+        $segmento = $tcp->buildSegment('', TCP::PSH, true);
+        TCP::dump_segment($segmento);
+        TCP::send_segment($segmento, $fscl_port);
+
+        $resposta = TCP::recv_segment($fssr_port);
+        TCP::dump_segment($resposta);
+        $infos    = TCP::unpack_info($resposta);
+
+        if (!TCP::is_valid_segment($resposta) || $infos['ack_num'] != $tcp->getSeqNumber()) {
+            echo "Falha na confirmação do pedido de PUSH." . PHP_EOL;
+            continue;
+        }
+
+        echo "Recebendo resposta..." . PHP_EOL;
+
+        $msg = $tcp->recvData($infos, $fscl_port, $fssr_port);
+
+        echo "Pedido de PUSH recebido." . PHP_EOL;
+
+        $tcp->calcNextAck($infos['data'], true);
+        $segmento = $tcp->buildSegment('', TCP::ACK);
+        TCP::dump_segment($segmento);
+        TCP::send_segment($segmento, $fscl_port);
+
+        echo "Enviando mensagem para a aplicação ({$tcp->getSourcePort()})..." . PHP_EOL;
 
         if (socket_write($connection, $msg, strlen($msg)) === false) {
-            echo "socket_connect() failed.\nReason: " . socket_strerror(socket_last_error($connection)) . PHP_EOL;
-            break;
+            echo "socket_write() falhou. Motivo: " . socket_strerror(socket_last_error($socket)) . PHP_EOL;
         }
-    } catch (Exception $e) {
+
+        echo "Finalizando conexão." . PHP_EOL;
+
+        $tcp->calcNextAck($infos['data']);
+        $segmento = $tcp->buildSegment('', TCP::FIN | TCP::ACK, true);
+        TCP::dump_segment($segmento);
+        TCP::send_segment($segmento, $fscl_port);
+
+        $resposta = TCP::recv_segment($fssr_port);
+        TCP::dump_segment($resposta);
+        $infos    = TCP::unpack_info($resposta);
+
+        if (!TCP::is_valid_segment($resposta) ||
+            $infos['ack_num'] != $tcp->getSeqNumber() ||
+            !TCP::is_flag_set($infos['control'], TCP::ACK)) {
+            echo "Erro na confirmação do fechamento da conexão." . PHP_EOL;
+            $tcp->close();
+            continue;
+        }
+
+        $resposta = TCP::recv_segment($fssr_port);
+        TCP::dump_segment($resposta);
+        $infos    = TCP::unpack_info($resposta);
+
+        if (!TCP::is_valid_segment($resposta) ||
+            $infos['ack_num'] != $tcp->getSeqNumber() ||
+            !TCP::is_flag_set($infos['control'], TCP::FIN | TCP::ACK)) {
+            echo "Erro no fechamento da conexão." . PHP_EOL;
+            $tcp->close();
+            continue;
+        }
+
+        $tcp->calcNextAck($infos['data'], true);
+        $segmento = $tcp->buildSegment('', TCP::ACK, true);
+        TCP::dump_segment($segmento);
+        TCP::send_segment($segmento, $fscl_port);
+
+        echo "Conexão Fechada." . PHP_EOL;
+
+        $tcp->close();
+
+    } catch(Exception $e) {
         echo "Socket error ({$e->getCode()}): {$e->getMessage()}" . PHP_EOL;
         echo "Arquivo: '{$e->getFile()}'- Linha: {$e->getLine()}" . PHP_EOL;
         print_r($e->getTrace());
         break;
     }
+
+    socket_close($connection);
 } while(true);
 
 socket_close($connection);
 socket_close($socket);
+
 ?>

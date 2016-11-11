@@ -14,7 +14,7 @@
     /* Iniciando a conexão (Three way handshake)*/
     $segmento = $tcp_or->buildSegment('', TCP::SYN, true);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
@@ -22,7 +22,7 @@
     $tcp_ds->calcNextAck($infos['data'], true);
     $segmento = $tcp_ds->buildSegment('', TCP::SYN | TCP::ACK, true);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
@@ -30,7 +30,7 @@
     $tcp_or->calcNextAck($infos['data'], true);
     $segmento = $tcp_or->buildSegment('', TCP::ACK);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
@@ -39,14 +39,14 @@
     $tcp_or->calcNextAck($infos['data']);
     $segmento = $tcp_or->buildSegment($http_get, TCP::ACK);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
     $tcp_ds->calcNextAck($infos['data']);
     $segmento = $tcp_ds->buildSegment('', TCP::ACK);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
@@ -54,14 +54,14 @@
     $tcp_or->calcNextAck($infos['data']);
     $segmento = $tcp_or->buildSegment('', TCP::PSH, true);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
     $tcp_ds->calcNextAck($infos['data'], true);
     $segmento = $tcp_ds->buildSegment('', TCP::ACK);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
@@ -69,28 +69,28 @@
     $tcp_or->calcNextAck($infos['data']);
     $segmento = $tcp_or->buildSegment('', TCP::FIN | TCP::ACK, true);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
     $tcp_ds->calcNextAck($infos['data'], true);
     $segmento = $tcp_ds->buildSegment('', TCP::ACK);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
     $tcp_ds->calcNextAck($infos['data']);
     $segmento = $tcp_ds->buildSegment('', TCP::FIN | TCP::ACK);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
     $tcp_or->calcNextAck($infos['data'], true);
     $segmento = $tcp_or->buildSegment('', TCP::ACK, true);
     hex_dump($segmento);
-    $infos    = TCP::unpackInfo($segmento);
+    $infos    = TCP::unpack_info($segmento);
     echo "{$infos['sr_port']} -> {$infos['dt_port']} Flags: " . TCP::flags_desc($infos['control']) . PHP_EOL;
     echo "{$infos['seq_num']} - {$infos['ack_num']}" . PHP_EOL;
 
