@@ -14,7 +14,7 @@ pack("nnnn")
 */
 
 if ($argc < 4) {
-    echo "Parâmtros insuficientes!" . PHP_EOL;
+    echo "Parâmetros insuficientes!" . PHP_EOL;
     echo "php udp_cl.php porta_escutada porta_fscl porta_fssr" . PHP_EOL;
     die;
 }
@@ -113,7 +113,7 @@ do {
         print_r($e->getTrace());
         break;
     }
-    
+
     socket_close($connection);
 } while(true);
 

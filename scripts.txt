@@ -3,25 +3,14 @@ Scripts
 UDP:
 
 Cliente:
-../TP_Redes/Física/fisica_cl.sh 45000 127.0.0.1 8081
-../TP_Redes/Física/fisica_sr.sh 8083 8084 512 127.0.0.1 8082
-../TP_Redes/Aplicação/build/app_cl.out 45000 8084
+./fisica_sr.sh 5002 7001 128
+./fisica_cl.sh 7002 127.0.0.1 5001
+php trans_cl.php (tcp | udp) 8082 7002 7001 5002
+./app_cl.out 8082
 
 
 Servidor:
-../TP_Redes/Física/fisica_sr.sh 8081 8080 512 127.0.0.1 45000
-../TP_Redes/Aplicação/build/app_sr.out 8080 8082
-../TP_Redes/Física/fisica_cl.sh 8082 127.0.0.1 8083
-
-TCP:
-
-Cliente:
-../TP_Redes/Física/fisica_cl.sh 45000 127.0.0.1 8081
-../TP_Redes/Física/fisica_sr.sh 8083 8084 512 127.0.0.1 8082
-../TP_Redes/Aplicação/build/app_cl.out 45000 8084
-
-
-Servidor:
-../TP_Redes/Física/fisica_sr.sh 8081 8080 512 127.0.0.1 45000
-../TP_Redes/Aplicação/build/app_sr.out 8080 8082
-../TP_Redes/Física/fisica_cl.sh 8082 127.0.0.1 8083
+./fisica_sr.sh 5001 7011 256
+./fisica_cl.sh 7012 127.0.0.1 5002
+php trans_sr.php (tcp | udp) 7012 7011 5001
+./app_sr.out 8081

@@ -1,5 +1,5 @@
 <?php
-    require_once 'camadas.php';
+require_once 'camadas.php';
 /*
 pack format
 c	signed char
@@ -19,8 +19,8 @@ pack("nnnn")
 */
 
 if ($argc < 4) {
-    echo "Parâmtros insuficientes!" . PHP_EOL;
-    echo "php udp_cl.php porta_escutada porta_fscl porta_fssr porta_injecao" . PHP_EOL;
+    echo "Parâmetros insuficientes!" . PHP_EOL;
+    echo "php tcp_cl.php porta_escutada porta_fscl porta_fssr porta_injecao" . PHP_EOL;
     die;
 }
 
@@ -29,7 +29,7 @@ $fscl_port = (int)$argv[2];
 $fssr_port = (int)$argv[3];
 $porta_injecao = (int)$argv[4];
 
-$tcp = new TCP(100);
+$tcp = new TCP;
 
 if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) {
     echo "socket_create() falhou. Motivo: " . socket_strerror(socket_last_error()) . PHP_EOL;

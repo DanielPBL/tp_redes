@@ -19,8 +19,8 @@ pack("nnnn")
 */
 
 if ($argc < 4) {
-    echo "Parâmtros insuficientes!" . PHP_EOL;
-    echo "php udp_cl.php porta_fscl porta_fssr porta_injecao" . PHP_EOL;
+    echo "Parâmetros insuficientes!" . PHP_EOL;
+    echo "php tcp_sr.php porta_fscl porta_fssr porta_injecao" . PHP_EOL;
     die;
 }
 
@@ -28,7 +28,7 @@ $fscl_port = (int)$argv[1];
 $fssr_port = (int)$argv[2];
 $porta_injecao = (int)$argv[3];
 
-$tcp = new TCP(300);
+$tcp = new TCP;
 
 try {
     echo "Perguntando o TMQ" . PHP_EOL;

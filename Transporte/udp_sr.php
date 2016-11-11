@@ -14,7 +14,7 @@ pack("nnnn")
 */
 
 if ($argc < 3) {
-    echo "Parâmtros insuficientes!" . PHP_EOL;
+    echo "Parâmetros insuficientes!" . PHP_EOL;
     echo "php udp_sr.php porta_fscl porta_fssr" . PHP_EOL;
     die;
 }
