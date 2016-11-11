@@ -7,20 +7,16 @@ http://php.net/manual/pt_BR/sockets.examples.php
 Foi considerado que quando a a mensagem termina de ser enviada a camada de transporte (TCP) envia mensagem de push. A mensagem é enviada para a aplicação e após isso é feita a troca de mensagens para fechar conexão.
 O cabeçalho TCP foi fixado em 20 bytes.
 
-Foi feita alteração nas camadas físicas cliente e servidor, adicionado loop para tentar reenviar até conseguir. 
+Foi feita alteração nas camadas físicas cliente e servidor, adicionado loop para tentar reenviar o dado até conseguir. 
 
-Exemplo para testar a transporte Cliente
+Exemplo para testar o transporte Cliente
 ./fisica_cl 8081 192.168.0.3 8085
 ./fisica_cl porta_q_escuta_app_cliente ip_camada_fisica_server porta_q_camada_fisica_server_escuta
 
-Exemplo para testar a fisica SERVIDOR
+Exemplo para testar o transporte SERVIDOR
 
 ./fisica_sr 8085 8086 1024 192.168.0.21 8081
 
 ./fisica_sr porta_q_escuta_fisica_cliente porta_q_app_server_escuta TMQ ip_da_camada_fisica_cliente porta_q_camada_fisica_cliente_escuta
 
 
-Alterações necessárias
-
-alteração no fisica_sr -> no final do arquivo, tem que "encaminhar" o retorno html recebido da camada de aplicação (servidor) para a camada física (cliente)
-e da mesma forma, encaminhar essa resposta (html) para a camada de aplicação (cliente)
