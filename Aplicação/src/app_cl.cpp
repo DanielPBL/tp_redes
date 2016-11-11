@@ -9,19 +9,16 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "camadas.h"
-
 using namespace std;
 
 int main(int argc, char **argv) {
-    int sockfd, portno, n, newsockfd;
-    struct sockaddr_in serv_addr,cli_addr;
+    int sockfd, portno, n;
+    struct sockaddr_in serv_addr;
     struct hostent *server;
-    socklen_t clilen;
     char buffer[1024];
 
-    if (argc < 3) {
-        printf("Execução: ./app_cl porta_requisição porta_resposta\n");
+    if (argc < 2) {
+        printf("Execução: ./app_cl porta_transporte\n");
         exit(1);
     }
 
@@ -80,65 +77,30 @@ int main(int argc, char **argv) {
     cout << "Requisição: " << endl;
     cout << req << endl;
 
-    char *msg_resposta = prepara_mensagem(req);
+    //char *msg_resposta = prepara_mensagem(req);
+    //não precisa mais adicionar os cabeçalhos nessa camada.
 
     /* Send message to the server */
-    n = write(sockfd, msg_resposta, strlen(req) + 52);
+    n = write(sockfd, req, strlen(req));
 
-    delete[] msg_resposta;
+    //delete[] msg_resposta;
 
     if (n < 0) {
         perror("ERROR writing to socket");
         exit(1);
     }
 
-    close(sockfd);
-
-    /*******Aguardando conexao para o retorno com o html***********/
-    /* First call to socket() function */
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (sockfd < 0) {
-        perror("ERROR opening socket 2");
-        exit(1);
-    }
-
-    bzero((char *) &serv_addr, sizeof(serv_addr));
-    portno = atoi(argv[2]);
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(portno);
-
-    /* Now bind the host address using bind() call.*/
-    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        perror("ERROR on binding 2");
-        exit(1);
-    }
-
-
     cout << "Aguardando resposta do servidor...\n";
 
-    listen(sockfd, 5);
-    clilen = sizeof(cli_addr);
-
-    /* Accept actual connection from the client */
-    newsockfd = accept(sockfd, (struct sockaddr *)&cli_addr, &clilen);
-
-    if (newsockfd < 0) {
-        perror("ERROR on accept");
-        exit(1);
-    }
-
-    /* If connection is established then start communicating */
     bzero(buffer, 1024);
-    n = read(newsockfd, buffer, 1024);
+    n = read(sockfd, buffer, 1024);
 
     if (n < 0) {
         perror("ERROR reading from socket");
         exit(1);
     }
 
-    strtok(buffer + 52, " "); //HTTP/1.1
+    strtok(buffer, " "); //HTTP/1.1
     cout << "Status: " << strtok(NULL, "\r\n") << endl; //Status Message
     strtok(NULL, "\r\n"); //Location
     strtok(NULL, "\r\n"); //Date
@@ -149,7 +111,7 @@ int main(int argc, char **argv) {
     char *pagina = strtok(NULL, "");
     cout << (pagina + 3) << endl;
 
-    close(newsockfd);
+    close(sockfd);
 
     return 0;
 }

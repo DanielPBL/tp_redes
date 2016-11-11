@@ -8,24 +8,21 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "camadas.h"
-
 using namespace std;
 FILE *openfile;
 
 #define PORTA 8082
 
 int main(int argc, char **argv) {
-    int sockfd, newsockfd, portno, sockfd_r;
+    int sockfd, newsockfd, portno;
     socklen_t clilen;
-    struct hostent *server;
     char buffer[1024];
     char resultcode[50], fileserver[50];
     struct sockaddr_in serv_addr, cli_addr;
     int  n;
 
-    if (argc < 3) {
-        printf("Execução: ./app_sr porta_escutada porta_resposta\n");
+    if (argc < 2) {
+        printf("Execução: ./app_sr porta_escutada\n");
         exit(1);
     }
 
@@ -77,7 +74,7 @@ int main(int argc, char **argv) {
         }
 
         /****METODO DA REQUISIÇAO**/
-        char *metodo  = strtok(buffer + 52, " ");
+        char *metodo  = strtok(buffer, " ");
         printf("Método: %s\n", metodo);
 
         /****FILE SERVER**/
@@ -114,36 +111,6 @@ int main(int argc, char **argv) {
 
         fclose(openfile);
 
-        close(newsockfd);
-
-        /* First call to socket() function */
-        sockfd_r = socket(AF_INET, SOCK_STREAM, 0);
-
-        if (sockfd_r < 0) {
-            perror("ERROR opening socket 2");
-            exit(1);
-        }
-
-        server = gethostbyname("127.0.0.1");
-
-        if (server == NULL) {
-            fprintf(stderr, "ERROR, no such host\n");
-            exit(1);
-        }
-
-        portno = atoi(argv[2]);
-
-        bzero((char *) &serv_addr, sizeof(serv_addr));
-        serv_addr.sin_family = AF_INET;
-        bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr, server->h_length);
-        serv_addr.sin_port = htons(portno);
-
-        /* Now connect to the server */
-        if (connect(sockfd_r, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-            perror("ERROR connecting 2");
-            exit(1);
-        }
-
         /****Monta o resultado para retorno******************/
         char result[1024] = "HTTP/1.1 ";
         strcat(result, resultcode);
@@ -177,18 +144,18 @@ int main(int argc, char **argv) {
         cout << result << endl;
 
         /* Write a response to the client */
-        char *msg_resposta = prepara_mensagem(result);
+        //char *msg_resposta = prepara_mensagem(result);
 
-        n = write(sockfd_r, msg_resposta, strlen(result) + 52);
+        n = write(newsockfd, result, strlen(result));
 
-        delete[] msg_resposta;
+        //delete[] msg_resposta;
 
         if (n < 0) {
             perror("ERROR writing to socket");
             exit(1);
         }
 
-        close(sockfd_r);
+        close(newsockfd);
     }
 
     return 0;

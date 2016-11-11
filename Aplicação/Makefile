@@ -12,8 +12,8 @@ RMFLAGS=-rf
 CLIENT=build/app_cl.out
 SERVER=build/app_sr.out
 
-OBJS_C=obj/camadas.o obj/app_cl.o
-OBJS_S=obj/camadas.o obj/app_sr.o
+OBJS_C=obj/app_cl.o
+OBJS_S=obj/app_sr.o
 
 all: $(CLIENT) $(SERVER)
 
@@ -32,9 +32,6 @@ $(CLIENT):	$(OBJS_C)
 
 $(SERVER):	$(OBJS_S)
 		$(CXX) -o $(SERVER) $(OBJS_S) $(LDXXFLAGS)
-
-obj/camadas.o: header/camadas.h src/camadas.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ src/camadas.cpp
 
 obj/app_cl.o: src/app_cl.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ src/app_cl.cpp
