@@ -10,12 +10,18 @@ O cabeçalho TCP foi fixado em 20 bytes.
 Foi feita alteração nas camadas físicas cliente e servidor, adicionado loop para tentar reenviar o dado até conseguir. 
 
 Exemplo para testar o transporte Cliente
-./fisica_cl 8081 192.168.0.3 8085
-./fisica_cl porta_q_escuta_app_cliente ip_camada_fisica_server porta_q_camada_fisica_server_escuta
+
+./fisica_sr.sh 5002 7001 128 (camada_fisica_cliente_escuta porta_q_app_cliente_escuta TMQ )
+./fisica_cl.sh 7002 127.0.0.1 5001(porta_q_cliente_fala IP_servidor camada_fisica_server_escuta)
+php trans_cl.php (tcp | udp) 8082 7002 7001 5002 (protocolo Socket_server porta_q_cliente_fala porta_q_cliente_escuta camada_fisica_cliente_escuta)
+./app_cl.out 8082 (porta_que_o_cliente_web_escuta)
 
 Exemplo para testar o transporte SERVIDOR
 
-./fisica_sr 8085 8086 1024 192.168.0.21 8081
+./fisica_sr.sh 5001 7011 256 (camada_fisica_server_escuta porta_q_app_server_escuta TMQ)
+./fisica_cl.sh 7012 127.0.0.1 5002 (porta_q_serve_fala Ip_destino  camada_fisica_cliente_escuta)
+php trans_sr.php (tcp | udp) 7012 7011 5001 (protocolo porta_q_server_fala  porta_q_app_server_escuta camada_fisica_server_escuta )
+./app_sr.out 8081 (porta_que_o_servidor_web_escuta)
 
 ./fisica_sr porta_q_escuta_fisica_cliente porta_q_app_server_escuta TMQ ip_da_camada_fisica_cliente porta_q_camada_fisica_cliente_escuta
 
