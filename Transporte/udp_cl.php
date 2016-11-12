@@ -75,7 +75,7 @@ do {
     try {
         echo "Enviando dados para a camada física..." . PHP_EOL;
 
-        $ip_header = IPHeader::build('192.168.0.113', '192.168.0.1');
+        $ip_header = IPHeader::build('25.100.190.38', '25.0.25.254');
         $pacote = $ip_header . $segmento;
         send_socket($pacote, $fscl_port);
 
@@ -97,7 +97,7 @@ do {
             echo "OK" . PHP_EOL;
         } else {
             echo "FALHA" . PHP_EOL;
-            echo "Segmento ignorado.";
+            echo "Segmento ignorado." . PHP_EOL;
             continue;
         }
 

@@ -260,7 +260,7 @@ class TCP {
     }
 
     public static function send_segment($segment, $port) {
-        $ip_header = IPHeader::build('192.168.0.113', '192.168.0.1');
+        $ip_header = IPHeader::build('25.100.190.38', '25.0.25.254');
         $packet = $ip_header . $segment;
         send_socket($packet, $port);
     }
