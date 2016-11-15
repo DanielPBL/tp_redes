@@ -84,7 +84,8 @@ while true; do
             break;
         fi
 
-        echo "Falha na entrega. Tentando novamente."
+        echo "Falha na entrega. Tentando novamente em 1s."
+        sleep 1
     done
 
     rm frame_r.dat &> /dev/null

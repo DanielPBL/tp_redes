@@ -260,7 +260,7 @@ class TCP {
     }
 
     public static function send_segment($segment, $port) {
-        $ip_header = IPHeader::build('25.100.190.38', '25.0.25.254');
+        $ip_header = IPHeader::build('192.168.1.7', '192.168.1.1');
         $packet = $ip_header . $segment;
         send_socket($packet, $port);
     }
@@ -297,7 +297,8 @@ function send_socket($msg, $port, $address = '127.0.0.1') {
     if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false)
         throw_socket_exception();
     try {
-        while (socket_connect($socket, $address, $port) === false);
+        while (socket_connect($socket, $address, $port) === false)
+            sleep(1);
         if (socket_write($socket, $msg, strlen($msg)) === false)
             throw_socket_exception($socket);
     } catch(Exception $e) {
@@ -313,7 +314,8 @@ function recv_socket($port, $address = '127.0.0.1') {
     if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false)
         throw_socket_exception();
     try {
-        while (socket_bind($socket, $address, $port) === false);
+        while (socket_bind($socket, $address, $port) === false)
+            sleep(1);
         if (socket_listen($socket) === false)
             throw_socket_exception($socket);
         if (($connection = socket_accept($socket)) === false)
