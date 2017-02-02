@@ -98,7 +98,7 @@ Tabela.prototype.router = function() {
                 var ip_origem  = header.readUInt32BE(12);
                 var ip_destino = header.readUInt32BE(16);
 
-                protocol = protocol + (protocol === 6 ? ' (UDP)' : ' (TCP)');
+                protocol = protocol + (protocol === 6 ? ' (TCP)' : ' (UDP)');
                 header.writeUInt16BE(0x0000, 10);
 
                 var origem = String((ip_origem >> 0x18) & 0x000000FF) + '.' +
