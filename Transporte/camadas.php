@@ -52,12 +52,26 @@ class TCP {
     private $control;
     private $mms;
 
-    function __construct($isn = null) {
+    private $socket = null;
+
+    function __construct($isn = null, $porta = null) {
         $isn = (int)$isn;
+
+        if ($porta !== null) {
+            if (($this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false)
+                throw_socket_exception();
+            while (socket_connect($this->socket, '127.0.0.1', $porta) === false)
+                throw_socket_exception($this->socket);
+        }
 
         $this->seq_num = empty($isn) ? TCP::ISN() : ($isn & 0xFFFFFFFF);
         $this->control = TCP::DATA_OFF;
         $this->mms     = 512;
+    }
+
+    function __destruct() {
+        if ($this->socket !== null)
+            socket_close($this->socket);
     }
 
     private function nextSeq($length) {
@@ -151,7 +165,7 @@ class TCP {
         return $segment . $data;
     }
 
-    public function sendData($msg, &$infos, $fscl_port, $fssr_port) {
+    public function sendData($msg, &$infos) {
         $length = strlen($msg);
         $pos    = 0;
         $mms    = $infos['mms'];
@@ -161,8 +175,8 @@ class TCP {
             $this->calcNextAck($infos['data']);
             $segmento = $this->buildSegment($pedaco, TCP::ACK);
             TCP::dump_segment($segmento);
-            TCP::send_segment($segmento, $fscl_port);
-            $resposta = TCP::recv_segment($fssr_port);
+            $this->send_segment($segmento);
+            $resposta = $this->recv_segment();
             TCP::dump_segment($resposta);
             $infos    = TCP::unpack_info($resposta);
 
@@ -177,10 +191,10 @@ class TCP {
         } while ($pos < $length);
     }
 
-    public function recvData(&$infos, $fscl_port, $fssr_port) {
+    public function recvData(&$infos) {
         $msg = '';
         do {
-            $segmento = TCP::recv_segment($fssr_port);
+            $segmento = $this->recv_segment();
             TCP::dump_segment($segmento);
             $infos    = TCP::unpack_info($segmento);
 
@@ -198,7 +212,7 @@ class TCP {
             $this->calcNextAck($infos['data']);
             $resposta = $this->buildSegment('', TCP::ACK);
             TCP::dump_segment($resposta);
-            TCP::send_segment($resposta, $fscl_port);
+            $this->send_segment($resposta);
         } while (true);
 
         return $msg;
@@ -259,16 +273,16 @@ class TCP {
         hex_dump($segmento);
     }
 
-    public static function send_segment($segment, $port) {
-        $ip_header = IPHeader::build('192.168.1.7', '192.168.1.1');
-        $packet = $ip_header . $segment;
-        send_socket($packet, $port);
+    public function send_segment($msg) {
+        if (socket_write($this->socket, $msg, strlen($msg)) === false)
+            throw_socket_exception($this->socket);
     }
 
-    public static function recv_segment($port) {
-        $segment = recv_socket($port);
-        $segment = substr($segment, 20);
-        return $segment;
+    public function recv_segment() {
+        if (($msg = socket_read($this->socket, 8192, PHP_BINARY_READ)) === false)
+            throw_socket_exception($this->socket);
+
+        return $msg;
     }
 
     public static function is_valid_segment($segment) {
@@ -291,45 +305,6 @@ function throw_socket_exception($socket = null) {
     $error_code = socket_last_error($socket);
 
     throw new Exception(socket_strerror($error_code), $error_code);
-}
-
-function send_socket($msg, $port, $address = '127.0.0.1') {
-    if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false)
-        throw_socket_exception();
-    try {
-        while (socket_connect($socket, $address, $port) === false)
-            sleep(1);
-        if (socket_write($socket, $msg, strlen($msg)) === false)
-            throw_socket_exception($socket);
-    } catch(Exception $e) {
-        throw $e;
-    } finally {
-        socket_close($socket);
-    }
-
-    return strlen($msg);
-}
-
-function recv_socket($port, $address = '127.0.0.1') {
-    if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false)
-        throw_socket_exception();
-    try {
-        while (socket_bind($socket, $address, $port) === false)
-            sleep(1);
-        if (socket_listen($socket) === false)
-            throw_socket_exception($socket);
-        if (($connection = socket_accept($socket)) === false)
-            throw_socket_exception($socket);
-        if (($msg = socket_read($connection, 8192, PHP_BINARY_READ)) === false)
-            throw_socket_exception($connection);
-        socket_close($connection);
-    } catch(Exception $e) {
-        throw $e;
-    } finally {
-        socket_close($socket);
-    }
-
-    return $msg;
 }
 
 function hex_dump($data, $newline = "\n") {

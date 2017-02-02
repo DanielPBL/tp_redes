@@ -46,7 +46,7 @@ while true; do
     #Só responde com o TMQ se a mensagem for exatamente "TMQ"
     if [ "$REQUEST" == "TMQ" ]; then
         echo "Repondendo com TMQ: $TMQ"
-        echo -n $TMQ > payload.bin
+        echo -n "TMQ:$TMQ" > payload.bin
     else
         #Caso contrário considera que é um quadro Ethernet em formato binário textual
         echo "Recebendo Frame Ethernet..."

@@ -13,15 +13,14 @@ Checksum -> S
 pack("nnnn")
 */
 
-if ($argc < 4) {
+if ($argc < 3) {
     echo "Parâmetros insuficientes!" . PHP_EOL;
-    echo "php udp_cl.php porta_escutada porta_fscl porta_fssr" . PHP_EOL;
+    echo "php udp_cl.php porta_escutada porta_rede" . PHP_EOL;
     die;
 }
 
 $app_port  = (int)$argv[1];
-$fscl_port = (int)$argv[2];
-$fssr_port = (int)$argv[3];
+$porta_rede = (int)$argv[2];
 
 if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) {
     echo "socket_create() falhou. Motivo: " . socket_strerror(socket_last_error()) . PHP_EOL;
@@ -37,6 +36,16 @@ if (socket_bind($socket, '127.0.0.1', $app_port) === false) {
 if (socket_listen($socket) === false) {
     echo "socket_listen() falhou. Motivo: " . socket_strerror(socket_last_error($socket)) . PHP_EOL;
     socket_close($socket);
+    die;
+}
+
+if (($socket_rd = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) {
+    echo "socket_create() falhou. Motivo: " . socket_strerror(socket_last_error()) . PHP_EOL;
+    die;
+}
+
+if (socket_connect($socket_rd, '127.0.0.1', $porta_rede) === false) {
+    echo "socket_connect() falhou. Motivo: " . socket_strerror(socket_last_error($socket_rd)) . PHP_EOL;
     die;
 }
 
@@ -66,27 +75,31 @@ do {
 
     echo "Porta de Origem : $porta_sr" . PHP_EOL;
     echo "Porta de Destino: $porta_ds" . PHP_EOL;
-    echo "Tamanho         : $length"   . PHP_EOL;
-    echo "Checksum        : $checksum" . PHP_EOL;
+    echo "Tamanho ........: $length"   . PHP_EOL;
+    echo "Checksum .......: $checksum" . PHP_EOL;
 
     echo "Segmento" . PHP_EOL;
     hex_dump($segmento);
 
     try {
-        echo "Enviando dados para a camada física..." . PHP_EOL;
+        echo "Enviando dados para a camada de rede..." . PHP_EOL;
 
-        $ip_header = IPHeader::build('192.168.1.7', '192.168.1.1');
+        if (socket_write($socket_rd, $segmento, strlen($segmento)) === false)
+            throw_socket_exception($socket_rd);
+        /*$ip_header = IPHeader::build('192.168.1.7', '192.168.1.1');
         $pacote = $ip_header . $segmento;
-        send_socket($pacote, $fscl_port);
+        send_socket($pacote, $fscl_port);*/
 
         echo "Esperando resposta..." . PHP_EOL;
 
-        $segmento = recv_socket($fssr_port);
+        if (($segmento = socket_read($socket_rd, 8192, PHP_BINARY_READ)) === false)
+            throw_socket_exception($socket_rd);
+        /*$segmento = recv_socket($fssr_port);*/
 
         echo "Segmento recebido..." . PHP_EOL;
 
         //Remover dados da camada de rede
-        $segmento      = substr($segmento, 20);
+        //$segmento      = substr($segmento, 20);
         $cabecalho_udp = substr($segmento, 0, 8);
         $dados         = unpack('nporta_sr/nporta_ds/nlength/nchecksum', $cabecalho_udp);
         $msg           = substr($segmento, 8);
@@ -104,7 +117,7 @@ do {
         echo "Enviando mensagem para a aplicação..." . PHP_EOL;
 
         if (socket_write($connection, $msg, strlen($msg)) === false) {
-            echo "socket_write() failed.\nReason: " . socket_strerror(socket_last_error($connection)) . PHP_EOL;
+            echo "socket_write() falhou. Motivo: " . socket_strerror(socket_last_error($connection)) . PHP_EOL;
             break;
         }
     } catch (Exception $e) {
@@ -113,10 +126,9 @@ do {
         print_r($e->getTrace());
         break;
     }
-
-    socket_close($connection);
 } while(true);
 
+socket_close($socket_rd);
 socket_close($connection);
 socket_close($socket);
 ?>

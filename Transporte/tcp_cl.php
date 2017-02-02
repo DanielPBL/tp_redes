@@ -18,18 +18,16 @@ Checksum -> S
 pack("nnnn")
 */
 
-if ($argc < 4) {
+if ($argc < 3) {
     echo "Parâmetros insuficientes!" . PHP_EOL;
-    echo "php tcp_cl.php porta_escutada porta_fscl porta_fssr porta_injecao" . PHP_EOL;
+    echo "php tcp_cl.php porta_escutada porta_rede" . PHP_EOL;
     die;
 }
 
 $app_port  = (int)$argv[1];
-$fscl_port = (int)$argv[2];
-$fssr_port = (int)$argv[3];
-$porta_injecao = (int)$argv[4];
+$porta_rede = (int)$argv[2];
 
-$tcp = new TCP;
+$tcp = new TCP(null, $porta_rede);
 
 if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) {
     echo "socket_create() falhou. Motivo: " . socket_strerror(socket_last_error()) . PHP_EOL;
@@ -51,8 +49,8 @@ if (socket_listen($socket) === false) {
 try {
     echo "Perguntando o TMQ" . PHP_EOL;
 
-    send_socket("TMQ", $porta_injecao);
-    $tmq = (int)recv_socket($fssr_port);
+    $this->recv_segment("TMQ");
+    $tmq = (int)$this->send_segment();
     //MMS = TMQ - IP_HEADER - ETHERNET_HEADER
     $mms = $tmq - 20 - 26;
     $tcp->setMMS($mms);
@@ -95,9 +93,9 @@ do {
 
         $segmento = $tcp->buildSegment('', TCP::SYN, true);
         TCP::dump_segment($segmento);
-        TCP::send_segment($segmento, $fscl_port);
+        $tcp->send_segment($segmento);
 
-        $resposta = TCP::recv_segment($fssr_port);
+        $resposta = $tcp->recv_segment();
         TCP::dump_segment($resposta);
         $infos    = TCP::unpack_info($resposta);
 
@@ -113,21 +111,21 @@ do {
         $tcp->calcNextAck($infos['data'], true);
         $segmento = $tcp->buildSegment('', TCP::ACK);
         TCP::dump_segment($segmento);
-        TCP::send_segment($segmento, $fscl_port);
+        $tcp->send_segment($segmento);
 
         echo "Conexão estabelecida." . PHP_EOL;
         echo "Transmitindo dados..." . PHP_EOL;
 
-        $tcp->sendData($msg, $infos, $fscl_port, $fssr_port);
+        $tcp->sendData($msg, $infos);
 
         echo "Enviando pedido de PUSH..." . PHP_EOL;
 
         $tcp->calcNextAck($infos['data']);
         $segmento = $tcp->buildSegment('', TCP::PSH, true);
         TCP::dump_segment($segmento);
-        TCP::send_segment($segmento, $fscl_port);
+        $tcp->send_segment($segmento);
 
-        $resposta = TCP::recv_segment($fssr_port);
+        $resposta = $tcp->recv_segment();
         TCP::dump_segment($resposta);
         $infos    = TCP::unpack_info($resposta);
 
@@ -138,14 +136,14 @@ do {
 
         echo "Recebendo resposta..." . PHP_EOL;
 
-        $msg = $tcp->recvData($infos, $fscl_port, $fssr_port);
+        $msg = $tcp->recvData($infos);
 
         echo "Pedido de PUSH recebido." . PHP_EOL;
 
         $tcp->calcNextAck($infos['data'], true);
         $segmento = $tcp->buildSegment('', TCP::ACK);
         TCP::dump_segment($segmento);
-        TCP::send_segment($segmento, $fscl_port);
+        $tcp->send_segment($segmento);
 
         echo "Enviando mensagem para a aplicação ({$tcp->getSourcePort()})..." . PHP_EOL;
 
@@ -158,9 +156,9 @@ do {
         $tcp->calcNextAck($infos['data']);
         $segmento = $tcp->buildSegment('', TCP::FIN | TCP::ACK, true);
         TCP::dump_segment($segmento);
-        TCP::send_segment($segmento, $fscl_port);
+        $tcp->send_segment($segmento);
 
-        $resposta = TCP::recv_segment($fssr_port);
+        $resposta = $tcp->recv_segment();
         TCP::dump_segment($resposta);
         $infos    = TCP::unpack_info($resposta);
 
@@ -172,7 +170,7 @@ do {
             continue;
         }
 
-        $resposta = TCP::recv_segment($fssr_port);
+        $resposta = $tcp->recv_segment();
         TCP::dump_segment($resposta);
         $infos    = TCP::unpack_info($resposta);
 
@@ -187,7 +185,7 @@ do {
         $tcp->calcNextAck($infos['data'], true);
         $segmento = $tcp->buildSegment('', TCP::ACK, true);
         TCP::dump_segment($segmento);
-        TCP::send_segment($segmento, $fscl_port);
+        $tcp->send_segment($segmento);
 
         echo "Conexão Fechada." . PHP_EOL;
 
