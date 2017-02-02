@@ -64,7 +64,7 @@ function main() {
         var segmento = chunk.toString();
         var header   = Buffer.alloc(20);
         var confs    = tabela.rotas[0].interface;
-        var protocol = (chunk.readUInt16BE(18) === confs.TMQ - 46) ? '6 (TCP)' : '17 (UDP)';
+        var protocol = (chunk.readUInt16BE(14) === confs.TMQ - 46) ? '6 (TCP)' : '17 (UDP)';
 
         var tamanho = chunk.length + 20;
 
