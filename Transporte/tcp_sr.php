@@ -135,12 +135,13 @@ do {
         socket_close($socket);
 
         echo "Enviando resposta para camada de rede..." . PHP_EOL;
-
+        usleep(500000);
+        
         $tcp->sendData($msg, $infos);
 
         echo "Enviando pedido de PUSH..." . PHP_EOL;
         usleep(500000);
-        
+
         $tcp->calcNextAck($infos['data']);
         $resposta = $tcp->buildSegment('', TCP::PSH, true);
         TCP::dump_segment($resposta);

@@ -116,7 +116,8 @@ do {
 
         echo "Conexão estabelecida." . PHP_EOL;
         echo "Transmitindo dados..." . PHP_EOL;
-
+        usleep(500000);
+        
         $tcp->sendData($msg, $infos);
 
         echo "Enviando pedido de PUSH..." . PHP_EOL;
