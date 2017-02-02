@@ -38,101 +38,104 @@ if (socket_listen($socket_rd) === false) {
     die;
 }
 
-do {
-    echo "Esperando dados da camada de rede..." . PHP_EOL;
-    try {
-        if (($connection_rd = socket_accept($socket_rd)) === false)
-            throw_socket_exception($socket_rd);
+echo "Esperando conexão camada de rede..." . PHP_EOL;
+if (($connection_rd = socket_accept($socket_rd)) === false) {
+    echo "socket_accept() falhou. Motivo: " . socket_strerror(socket_last_error($socket_rd)) . PHP_EOL;
+    socket_close($socket_rd);
+    die;
+}
 
-        try {
+try {
+    do {
+        echo "Esperando dados da camada de rede..." . PHP_EOL;
+        do {
             if (($segmento = socket_read($connection_rd, 8192, PHP_BINARY_READ)) === false)
                 throw_socket_exception($connection_rd);
+        } while(empty($segmento));
 
-            echo "Segmento recebido..." . PHP_EOL;
+        echo "Segmento recebido..." . PHP_EOL;
+        hex_dump($segmento);
 
-            //Remover dados da camada de rede
-            //$segmento      = substr($segmento, 20);
+        //Remover dados da camada de rede
+        //$segmento      = substr($segmento, 20);
 
-            $cabecalho_udp = substr($segmento, 0, 8);
-            $dados         = unpack('nporta_sr/nporta_ds/nlength/nchecksum', $cabecalho_udp);
-            $msg           = substr($segmento, 8);
+        $cabecalho_udp = substr($segmento, 0, 8);
+        $dados         = unpack('nporta_sr/nporta_ds/nlength/nchecksum', $cabecalho_udp);
+        $msg           = substr($segmento, 8);
 
-            echo "Validação do segmento... ";
+        echo "Validação do segmento... ";
 
-            if (checksum(pack('nnn', $dados['porta_sr'], $dados['porta_ds'], $dados['length']). $msg) === $dados['checksum']) {
-                echo "OK" . PHP_EOL;
-            } else {
-                echo "FALHA" . PHP_EOL;
-                echo "Segmento ignorado." . PHP_EOL;
+        if (checksum(pack('nnn', $dados['porta_sr'], $dados['porta_ds'], $dados['length']). $msg) === $dados['checksum']) {
+            echo "OK" . PHP_EOL;
+        } else {
+            echo "FALHA" . PHP_EOL;
+            echo "Segmento ignorado." . PHP_EOL;
+            continue;
+        }
+
+        echo "Enviando mensagem para a aplicação ({$dados['porta_ds']})..." . PHP_EOL;
+
+        if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) {
+            echo "socket_create() falhou. Motivo: " . socket_strerror(socket_last_error()) . PHP_EOL;
+            break;
+        }
+
+        $connection = socket_connect($socket, '127.0.0.1', $dados['porta_ds']);
+        if ($connection === false) {
+            if (socket_last_error($socket) == 111) {
+                echo "Porta de destino inválida ({$dados['porta_ds']})" . PHP_EOL;
+                echo "Pacote ignorado." . PHP_EOL;
+                socket_close($socket);
                 continue;
             }
-
-            echo "Enviando mensagem para a aplicação ({$dados['porta_ds']})..." . PHP_EOL;
-
-            if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) {
-                echo "socket_create() falhou. Motivo: " . socket_strerror(socket_last_error()) . PHP_EOL;
-                break;
-            }
-
-            $connection = socket_connect($socket, '127.0.0.1', $dados['porta_ds']);
-            if ($connection === false) {
-                if (socket_last_error($socket) == 111) {
-                    echo "Porta de destino inválida ({$dados['porta_ds']})" . PHP_EOL;
-                    echo "Pacote ignorado." . PHP_EOL;
-                    socket_close($socket);
-                    continue;
-                }
-                echo "socket_connect() falhou. Motivo: " . socket_strerror(socket_last_error($socket)) . PHP_EOL;
-                break;
-            }
-
-            if (socket_write($socket, $msg, strlen($msg)) === false) {
-                echo "socket_write() falhou. Motivo: " . socket_strerror(socket_last_error($socket)) . PHP_EOL;
-            }
-
-            echo "Esperando resposta..." . PHP_EOL;
-
-            if (false === ($msg = socket_read($socket, 8192, PHP_BINARY_READ))) {
-                echo "socket_read() falhou. Motivo: " . socket_strerror(socket_last_error($app_cl_cnn)) . PHP_EOL;
-                break;
-            }
-
-            socket_close($socket);
-
-            $temp      = $dados['porta_ds'];
-            $porta_ds  = $dados['porta_sr'];
-            $porta_sr  = $temp;
-
-            $length    = strlen($msg) + 8;
-            $checksum  = checksum(pack('nnn', $porta_sr, $porta_ds, $length) . $msg);
-            $segmento  = pack('nnnn', $porta_sr, $porta_ds, $length, $checksum);
-            $segmento .= $msg;
-
-            echo "Porta de Origem : $porta_sr" . PHP_EOL;
-            echo "Porta de Destino: $porta_ds" . PHP_EOL;
-            echo "Tamanho ........: $length"   . PHP_EOL;
-            echo "Checksum .......: $checksum" . PHP_EOL;
-
-            echo "Segmento" . PHP_EOL;
-            hex_dump($segmento);
-
-            echo "Enviando dados para a camada de rede..." . PHP_EOL;
-            /*$ip_header = IPHeader::build('192.168.1.7', '192.168.1.1');
-            $pacote = $ip_header . $segmento;
-
-            send_socket($pacote, $fscl_port);*/
-            if (socket_write($connection_rd, $segmento, strlen($segmento)) === false)
-                throw_socket_exception($connection_rd);
-        } catch (Exception $e) {
-            echo "Socket error ({$e->getCode()}): {$e->getMessage()}" . PHP_EOL;
-            echo "Arquivo: '{$e->getFile()}'- Linha: {$e->getLine()}" . PHP_EOL;
-            print_r($e->getTrace());
+            echo "socket_connect() falhou. Motivo: " . socket_strerror(socket_last_error($socket)) . PHP_EOL;
             break;
-        } finally {
-            socket_close($connection_rd);
         }
-    } finally {
-        socket_close($socket_rd);
-    }
-} while(true);
+
+        if (socket_write($socket, $msg, strlen($msg)) === false) {
+            echo "socket_write() falhou. Motivo: " . socket_strerror(socket_last_error($socket)) . PHP_EOL;
+        }
+
+        echo "Esperando resposta..." . PHP_EOL;
+
+        if (false === ($msg = socket_read($socket, 8192, PHP_BINARY_READ))) {
+            echo "socket_read() falhou. Motivo: " . socket_strerror(socket_last_error($app_cl_cnn)) . PHP_EOL;
+            break;
+        }
+
+        socket_close($socket);
+
+        $temp      = $dados['porta_ds'];
+        $porta_ds  = $dados['porta_sr'];
+        $porta_sr  = $temp;
+
+        $length    = strlen($msg) + 8;
+        $checksum  = checksum(pack('nnn', $porta_sr, $porta_ds, $length) . $msg);
+        $segmento  = pack('nnnn', $porta_sr, $porta_ds, $length, $checksum);
+        $segmento .= $msg;
+
+        echo "Porta de Origem : $porta_sr" . PHP_EOL;
+        echo "Porta de Destino: $porta_ds" . PHP_EOL;
+        echo "Tamanho ........: $length"   . PHP_EOL;
+        echo "Checksum .......: $checksum" . PHP_EOL;
+
+        echo "Segmento" . PHP_EOL;
+        hex_dump($segmento);
+
+        echo "Enviando dados para a camada de rede..." . PHP_EOL;
+        /*$ip_header = IPHeader::build('192.168.1.7', '192.168.1.1');
+        $pacote = $ip_header . $segmento;
+
+        send_socket($pacote, $fscl_port);*/
+        if (socket_write($connection_rd, $segmento, strlen($segmento)) === false)
+            throw_socket_exception($connection_rd);
+    } while(true);
+} catch (Exception $e) {
+    echo "Socket error ({$e->getCode()}): {$e->getMessage()}" . PHP_EOL;
+    echo "Arquivo: '{$e->getFile()}'- Linha: {$e->getLine()}" . PHP_EOL;
+    print_r($e->getTrace());
+} finally {
+    socket_close($connection_rd);
+    socket_close($socket_rd);
+}
 ?>

@@ -27,7 +27,7 @@ if ($argc < 3) {
 $app_port  = (int)$argv[1];
 $porta_rede = (int)$argv[2];
 
-$tcp = new TCP(null, $porta_rede);
+$tcp = new TCP($porta_rede, true, 0);
 
 if (($socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) {
     echo "socket_create() falhou. Motivo: " . socket_strerror(socket_last_error()) . PHP_EOL;
@@ -49,8 +49,8 @@ if (socket_listen($socket) === false) {
 try {
     echo "Perguntando o TMQ" . PHP_EOL;
 
-    $this->recv_segment("TMQ");
-    $tmq = (int)$this->send_segment();
+    $tcp->send_segment("TMQ");
+    $tmq = (int)$tcp->recv_segment();
     //MMS = TMQ - IP_HEADER - ETHERNET_HEADER
     $mms = $tmq - 20 - 26;
     $tcp->setMMS($mms);
@@ -81,9 +81,10 @@ do {
 
     $pos       = strpos($msg, 'Host: ') + 6;
     $host      = substr($msg, $pos, strpos($msg, "\r\n", $pos) - $pos);
-    $porta_ds  = explode(':', $host);
+    $arr_host  = explode(':', $host);
     $porta_sr  = $app_port;
-    $porta_ds  = count($porta_ds) < 2 ? 8080 : (int)$porta_ds[1];
+    $porta_ds  = count($arr_host) < 2 ? 8080 : (int)$arr_host[1];
+    $tcp->host = $arr_host[0];
 
     $tcp->setSourcePort($porta_sr);
     $tcp->setDestinationPort($porta_ds);
@@ -119,6 +120,7 @@ do {
         $tcp->sendData($msg, $infos);
 
         echo "Enviando pedido de PUSH..." . PHP_EOL;
+        usleep(500000);
 
         $tcp->calcNextAck($infos['data']);
         $segmento = $tcp->buildSegment('', TCP::PSH, true);
@@ -152,6 +154,7 @@ do {
         }
 
         echo "Finalizando conexão." . PHP_EOL;
+        usleep(500000);
 
         $tcp->calcNextAck($infos['data']);
         $segmento = $tcp->buildSegment('', TCP::FIN | TCP::ACK, true);

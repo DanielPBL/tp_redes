@@ -18,7 +18,7 @@ Checksum -> S
 pack("nnnn")
 */
 
-if ($argc < 4) {
+if ($argc < 2) {
     echo "Parâmetros insuficientes!" . PHP_EOL;
     echo "php tcp_sr.php porta_rede" . PHP_EOL;
     die;
@@ -26,7 +26,7 @@ if ($argc < 4) {
 
 $porta_rede = (int)$argv[1];
 
-$tcp = new TCP(null, $porta_rede);
+$tcp = new TCP($porta_rede, false, 0);
 
 try {
     echo "Perguntando o TMQ" . PHP_EOL;
@@ -49,7 +49,7 @@ try {
 }
 
 do {
-    echo "Esperando dados da camada física..." . PHP_EOL;
+    echo "Esperando dados da camada de rede..." . PHP_EOL;
 
     try {
         $segmento = $tcp->recv_segment();
@@ -76,7 +76,7 @@ do {
         $tcp->setSourcePort($segmento['dt_port']);
         $resposta = $tcp->buildSegment('', TCP::SYN | TCP::ACK, true);
         TCP::dump_segment($resposta);
-        TCP::send_segment($resposta);
+        $tcp->send_segment($resposta);
 
         $segmento = $tcp->recv_segment();
         TCP::dump_segment($segmento);
@@ -134,12 +134,13 @@ do {
 
         socket_close($socket);
 
-        echo "Enviando resposta para camada física..." . PHP_EOL;
+        echo "Enviando resposta para camada de rede..." . PHP_EOL;
 
         $tcp->sendData($msg, $infos);
 
         echo "Enviando pedido de PUSH..." . PHP_EOL;
-
+        usleep(500000);
+        
         $tcp->calcNextAck($infos['data']);
         $resposta = $tcp->buildSegment('', TCP::PSH, true);
         TCP::dump_segment($resposta);
@@ -172,6 +173,8 @@ do {
         $resposta = $tcp->buildSegment('', TCP::ACK);
         TCP::dump_segment($resposta);
         $tcp->send_segment($resposta);
+
+        usleep(500000);
 
         $tcp->calcNextAck($infos['data']);
         $resposta = $tcp->buildSegment('', TCP::FIN | TCP::ACK, true);

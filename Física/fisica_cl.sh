@@ -135,7 +135,7 @@ while true; do
             break;
         fi
 
-        echo "Falha na entrega. Tentando novamente em 1s."
+        echo -n "."
         sleep 1
     done
 

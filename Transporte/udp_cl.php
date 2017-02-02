@@ -92,8 +92,10 @@ do {
 
         echo "Esperando resposta..." . PHP_EOL;
 
-        if (($segmento = socket_read($socket_rd, 8192, PHP_BINARY_READ)) === false)
-            throw_socket_exception($socket_rd);
+        do {
+            if (($segmento = socket_read($socket_rd, 8192, PHP_BINARY_READ)) === false)
+                throw_socket_exception($socket_rd);
+        } while (empty($segmento));
         /*$segmento = recv_socket($fssr_port);*/
 
         echo "Segmento recebido..." . PHP_EOL;

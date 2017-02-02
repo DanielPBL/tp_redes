@@ -1,8 +1,8 @@
 
-var rts = require('./rota.js');
+var rts = require('./rede.js');
 
-var rota = new rts.Rota('192.168.1.0', '255.255.255.0', '192.168.1.10:8080/8081');
-var tabl = new rts.Tabela(testTabl, './tabela.txt');
+var rota = new rts.Rota('192.168.1.0', '255.255.255.0', '192.168.1.10:6010/6001/5002');
+var tabl = new rts.Tabela(testTabl, './tabela_c.txt');
 
 console.log(rota);
 console.log(rota.match('192.168.1.1'));

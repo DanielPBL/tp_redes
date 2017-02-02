@@ -52,16 +52,29 @@ class TCP {
     private $control;
     private $mms;
 
-    private $socket = null;
+    public $host;
 
-    function __construct($isn = null, $porta = null) {
+    private $socket    = null;
+    private $connection = null;
+
+    function __construct($porta, $conect, $isn = null) {
         $isn = (int)$isn;
 
-        if ($porta !== null) {
-            if (($this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false)
-                throw_socket_exception();
-            while (socket_connect($this->socket, '127.0.0.1', $porta) === false)
+        if (($this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false)
+            throw_socket_exception();
+
+        if ($conect === true) {
+            if (socket_connect($this->socket, '127.0.0.1', $porta) === false)
                 throw_socket_exception($this->socket);
+        } else if ($conect === false) {
+            if (socket_bind($this->socket, '127.0.0.1', $porta) === false)
+                throw_socket_exception($this->socket);
+            if (socket_listen($this->socket) === false)
+                throw_socket_exception($this->socket);
+            $this->connection = $this->socket;
+            echo "Esperando conexão da camada de rede..." . PHP_EOL;
+            if (($this->socket = socket_accept($this->socket)) === false)
+                throw_socket_exception($this->connection);
         }
 
         $this->seq_num = empty($isn) ? TCP::ISN() : ($isn & 0xFFFFFFFF);
@@ -72,6 +85,8 @@ class TCP {
     function __destruct() {
         if ($this->socket !== null)
             socket_close($this->socket);
+        if ($this->connection !== null)
+            socket_close($this->connection);
     }
 
     private function nextSeq($length) {
@@ -274,13 +289,22 @@ class TCP {
     }
 
     public function send_segment($msg) {
+        /*hack para transmitir o endereço ip do host*/
+        $ip = explode('.', $this->host);
+        if (count($ip) === 4) {
+            $msg .= pack('CCCC',
+                $ip[0], $ip[1], $ip[2], $ip[3]);
+        }
+
         if (socket_write($this->socket, $msg, strlen($msg)) === false)
             throw_socket_exception($this->socket);
     }
 
     public function recv_segment() {
-        if (($msg = socket_read($this->socket, 8192, PHP_BINARY_READ)) === false)
-            throw_socket_exception($this->socket);
+        do {
+            if (($msg = socket_read($this->socket, 8192, PHP_BINARY_READ)) === false)
+                throw_socket_exception($this->socket);
+        } while (empty($msg));
 
         return $msg;
     }
